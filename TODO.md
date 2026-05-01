@@ -40,3 +40,8 @@ Create full stack web app:
 - [x] 4.4 Create SecurityConfig
 - [x] 4.5 Create AuthController (login/register)
 - [x] 4.6 Update ProductManager.vue with login/logout
+
+### Phase 5: Fix NullPointerException
+- [x] 5.1 Fix AuthController: use @PostConstruct instead of constructor
+- [x] 5.2 Add null checks in ProductService
+- [x] 5.3 Add exception handling in ProductController
