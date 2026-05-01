@@ -1,89 +1,135 @@
 <template>
   <div class="product-manager">
-    <!-- Form for Add/Edit Product -->
-    <div class="form-section">
-      <h2>{{ isEditing ? 'Edit Product' : 'Add New Product' }}</h2>
-      <form @submit.prevent="submitForm">
+    <!-- Login Form -->
+    <div v-if="!isAuthenticated" class="login-section">
+      <h2>Login Required</h2>
+      <form @submit.prevent="login">
         <div class="form-group">
-          <label for="name">Name:</label>
+          <label for="username">Username:</label>
           <input 
-            id="name" 
-            v-model="form.name" 
+            id="username" 
+            v-model="loginForm.username" 
             type="text" 
             required 
-            placeholder="Enter product name"
+            placeholder="Enter username"
           />
         </div>
         
         <div class="form-group">
-          <label for="price">Price:</label>
+          <label for="password">Password:</label>
           <input 
-            id="price" 
-            v-model.number="form.price" 
-            type="number" 
-            step="0.01" 
+            id="password" 
+            v-model="loginForm.password" 
+            type="password" 
             required 
-            placeholder="Enter product price"
+            placeholder="Enter password"
           />
-        </div>
-        
-        <div class="form-group">
-          <label for="description">Description:</label>
-          <textarea 
-            id="description" 
-            v-model="form.description" 
-            required 
-            placeholder="Enter product description"
-            rows="3"
-          ></textarea>
         </div>
         
         <div class="form-buttons">
-          <button type="submit" class="btn-primary">
-            {{ isEditing ? 'Update' : 'Add Product' }}
-          </button>
-          <button 
-            v-if="isEditing" 
-            type="button" 
-            class="btn-secondary" 
-            @click="cancelEdit"
-          >
-            Cancel
-          </button>
+          <button type="submit" class="btn-primary">Login</button>
         </div>
+        
+        <p v-if="loginError" class="error">{{ loginError }}</p>
       </form>
+      
+      <p class="register-hint">
+        Default users: admin/admin123 or user/user123
+      </p>
     </div>
     
-    <!-- Product List -->
-    <div class="list-section">
-      <h2>Products List</h2>
-      <div v-if="loading" class="loading">Loading...</div>
-      <div v-else-if="error" class="error">{{ error }}</div>
-      <table v-else class="product-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Price</th>
-            <th>Description</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="product in products" :key="product.id">
-            <td>{{ product.id }}</td>
-            <td>{{ product.name }}</td>
-            <td>${{ product.price?.toFixed(2) }}</td>
-            <td>{{ product.description }}</td>
-            <td class="actions">
-              <button class="btn-edit" @click="editProduct(product)">Edit</button>
-              <button class="btn-delete" @click="deleteProduct(product.id)">Delete</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <div v-if="!loading && products.length === 0" class="no-products">
-        No products found. Add your first product!
+    <!-- Product Manager (Authenticated) -->
+    <div v-else class="authenticated-content">
+      <div class="header">
+        <h2>Welcome, {{ currentUser }}!</h2>
+        <button class="btn-logout" @click="logout">Logout</button>
+      </div>
+      
+      <!-- Form for Add/Edit Product -->
+      <div class="form-section">
+        <h3>{{ isEditing ? 'Edit Product' : 'Add New Product' }}</h3>
+        <form @submit.prevent="submitForm">
+          <div class="form-group">
+            <label for="name">Name:</label>
+            <input 
+              id="name" 
+              v-model="form.name" 
+              type="text" 
+              required 
+              placeholder="Enter product name"
+            />
+          </div>
+          
+          <div class="form-group">
+            <label for="price">Price:</label>
+            <input 
+              id="price" 
+              v-model.number="form.price" 
+              type="number" 
+              step="0.01" 
+              required 
+              placeholder="Enter product price"
+            />
+          </div>
+          
+          <div class="form-group">
+            <label for="description">Description:</label>
+            <textarea 
+              id="description" 
+              v-model="form.description" 
+              required 
+              placeholder="Enter product description"
+              rows="3"
+            ></textarea>
+          </div>
+          
+          <div class="form-buttons">
+            <button type="submit" class="btn-primary">
+              {{ isEditing ? 'Update' : 'Add Product' }}
+            </button>
+            <button 
+              v-if="isEditing" 
+              type="button" 
+              class="btn-secondary" 
+              @click="cancelEdit"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+      
+      <!-- Product List -->
+      <div class="list-section">
+        <h3>Products List</h3>
+        <div v-if="loading" class="loading">Loading...</div>
+        <div v-else-if="error" class="error">{{ error }}</div>
+        <table v-else class="product-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Price</th>
+              <th>Description</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="product in products" :key="product.id">
+              <td>{{ product.id }}</td>
+              <td>{{ product.name }}</td>
+              <td>${{ product.price?.toFixed(2) }}</td>
+              <td>{{ product.description }}</td>
+              <td class="actions">
+                <button class="btn-edit" @click="editProduct(product)">Edit</button>
+                <button class="btn-delete" @click="deleteProduct(product.id)">Delete</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-if="!loading && products.length === 0" class="no-products">
+          No products found. Add your first product!
+        </div>
       </div>
     </div>
   </div>
@@ -93,14 +139,24 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
-const API_URL = 'http://localhost:8080/api/products'
+const API_URL = 'http://localhost:8080/api'
+const AUTH_URL = `${API_URL}/auth`
 
 // State
+const isAuthenticated = ref(false)
+const currentUser = ref('')
+const token = ref(localStorage.getItem('token') || '')
 const products = ref([])
 const loading = ref(false)
 const error = ref('')
+const loginError = ref('')
 const isEditing = ref(false)
 const editingId = ref(null)
+
+const loginForm = ref({
+  username: '',
+  password: ''
+})
 
 const form = ref({
   name: '',
@@ -108,15 +164,74 @@ const form = ref({
   description: ''
 })
 
+// Check for existing token on mount
+onMounted(() => {
+  if (token.value) {
+    isAuthenticated.value = true
+    currentUser.value = localStorage.getItem('username') || 'User'
+    fetchProducts()
+  }
+})
+
+// Login
+const login = async () => {
+  loginError.value = ''
+  try {
+    const response = await axios.post(`${AUTH_URL}/login`, {
+      username: loginForm.value.username,
+      password: loginForm.value.password
+    })
+    
+    token.value = response.data.token
+    currentUser.value = response.data.username
+    
+    // Save to localStorage
+    localStorage.setItem('token', token.value)
+    localStorage.setItem('username', currentUser.value)
+    
+    isAuthenticated.value = true
+    loginForm.value = { username: '', password: '' }
+    
+    // Fetch products after login
+    fetchProducts()
+  } catch (err) {
+    loginError.value = 'Invalid username or password'
+    console.error('Login error:', err)
+  }
+}
+
+// Logout
+const logout = () => {
+  token.value = ''
+  currentUser.value = ''
+  isAuthenticated.value = false
+  products.value = []
+  localStorage.removeItem('token')
+  localStorage.removeItem('username')
+}
+
+// Get auth headers
+const getAuthHeaders = () => ({
+  'Authorization': `Bearer ${token.value}`,
+  'Content-Type': 'application/json'
+})
+
 // Fetch all products (GET)
 const fetchProducts = async () => {
   loading.value = true
   error.value = ''
   try {
-    const response = await axios.get(API_URL)
+    const response = await axios.get(`${API_URL}/products`, {
+      headers: getAuthHeaders()
+    })
     products.value = response.data
   } catch (err) {
-    error.value = 'Failed to fetch products: ' + (err.response?.data?.message || err.message)
+    if (err.response?.status === 401) {
+      logout()
+      error.value = 'Session expired. Please login again.'
+    } else {
+      error.value = 'Failed to fetch products: ' + (err.response?.data?.message || err.message)
+    }
     console.error('Error fetching products:', err)
   } finally {
     loading.value = false
@@ -129,17 +244,26 @@ const submitForm = async () => {
   try {
     if (isEditing.value) {
       // UPDATE - PUT request
-      await axios.put(`${API_URL}/${editingId.value}`, form.value)
+      await axios.put(`${API_URL}/products/${editingId.value}`, form.value, {
+        headers: getAuthHeaders()
+      })
     } else {
       // INSERT - POST request
-      await axios.post(API_URL, form.value)
+      await axios.post(`${API_URL}/products`, form.value, {
+        headers: getAuthHeaders()
+      })
     }
     
     // Reset form and refresh list
     resetForm()
     await fetchProducts()
   } catch (err) {
-    error.value = 'Failed to save product: ' + (err.response?.data?.message || err.message)
+    if (err.response?.status === 401) {
+      logout()
+      error.value = 'Session expired. Please login again.'
+    } else {
+      error.value = 'Failed to save product: ' + (err.response?.data?.message || err.message)
+    }
     console.error('Error saving product:', err)
   }
 }
@@ -168,10 +292,17 @@ const deleteProduct = async (id) => {
   
   error.value = ''
   try {
-    await axios.delete(`${API_URL}/${id}`)
+    await axios.delete(`${API_URL}/products/${id}`, {
+      headers: getAuthHeaders()
+    })
     await fetchProducts()
   } catch (err) {
-    error.value = 'Failed to delete product: ' + (err.response?.data?.message || err.message)
+    if (err.response?.status === 401) {
+      logout()
+      error.value = 'Session expired. Please login again.'
+    } else {
+      error.value = 'Failed to delete product: ' + (err.response?.data?.message || err.message)
+    }
     console.error('Error deleting product:', err)
   }
 }
@@ -186,29 +317,26 @@ const resetForm = () => {
     description: ''
   }
 }
-
-// Load products on component mount
-onMounted(() => {
-  fetchProducts()
-})
 </script>
 
 <style scoped>
 .product-manager {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 30px;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
-.form-section,
-.list-section {
+.login-section {
   background: white;
-  padding: 20px;
+  padding: 30px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  margin: 50px auto;
 }
 
-h2 {
+.login-section h2,
+.form-section h3,
+.list-section h3 {
   color: #333;
   margin-bottom: 20px;
 }
@@ -242,12 +370,14 @@ h2 {
 .form-buttons {
   display: flex;
   gap: 10px;
+  margin-top: 15px;
 }
 
 .btn-primary,
 .btn-secondary,
 .btn-edit,
-.btn-delete {
+.btn-delete,
+.btn-logout {
   padding: 10px 20px;
   border: none;
   border-radius: 4px;
@@ -272,6 +402,44 @@ h2 {
 
 .btn-secondary:hover {
   background-color: #757575;
+}
+
+.btn-logout {
+  background-color: #f44336;
+  color: white;
+}
+
+.btn-logout:hover {
+  background-color: #d32f2f;
+}
+
+.authenticated-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header h2 {
+  margin: 0;
+  color: #333;
+}
+
+.form-section,
+.list-section {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .product-table {
@@ -329,11 +497,18 @@ h2 {
 
 .error {
   color: #f44336;
+  margin-top: 10px;
 }
 
-@media (max-width: 768px) {
-  .product-manager {
-    grid-template-columns: 1fr;
-  }
+.login-error {
+  color: #f44336;
+  margin-top: 10px;
+}
+
+.register-hint {
+  text-align: center;
+  color: #999;
+  font-size: 12px;
+  margin-top: 15px;
 }
 </style>

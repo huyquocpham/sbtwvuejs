@@ -29,6 +29,14 @@ Create full stack web app:
 - [x] 2.7 Create ProductManager.vue component
 
 ### Phase 3: Testing
-- [ ] 3.1 Test backend API endpoints
-- [ ] 3.2 Test frontend application
-- [ ] 3.3 Verify full stack integration
+- [x] 3.1 Test backend API endpoints
+- [x] 3.2 Test frontend application
+- [x] 3.3 Verify full stack integration
+
+### Phase 4: Add JWT Authentication
+- [x] 4.1 Add Spring Security and JWT dependencies to pom.xml
+- [x] 4.2 Create JwtTokenProvider
+- [x] 4.3 Create JwtAuthenticationFilter
+- [x] 4.4 Create SecurityConfig
+- [x] 4.5 Create AuthController (login/register)
+- [x] 4.6 Update ProductManager.vue with login/logout
