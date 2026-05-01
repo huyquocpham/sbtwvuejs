@@ -1,6 +1,7 @@
 package com.example.demo.controller;
 
 import com.example.demo.config.JwtTokenProvider;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,11 @@ public class AuthController {
     private final AtomicLong userIdCounter = new AtomicLong(1);
     
     public AuthController() {
+        // Empty constructor - initialization happens in @PostConstruct
+    }
+    
+    @PostConstruct
+    public void init() {
         // Create default admin user
         Map<String, Object> admin = new HashMap<>();
         admin.put("id", 1L);
@@ -52,7 +58,7 @@ public class AuthController {
         String username = request.get("username");
         String password = request.get("password");
         
-        if (username == null || password == null) {
+        if (username == null || password == null || username.trim().isEmpty() || password.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Username and password are required"));
         }
         
@@ -83,13 +89,18 @@ public class AuthController {
         String username = request.get("username");
         String password = request.get("password");
         
-        if (username == null || password == null) {
+        if (username == null || password == null || username.trim().isEmpty() || password.trim().isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Username and password are required"));
         }
         
         Map<String, Object> user = users.get(username);
         
-if (user == null || !passwordEncoder.matches(password, (String) user.get("password"))) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid username or password"));
+        }
+        
+        String storedPassword = (String) user.get("password");
+        if (storedPassword == null || !passwordEncoder.matches(password, storedPassword)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid username or password"));
         }
         
